@@ -158,7 +158,6 @@
 
                 <div class="board-project">
                     <div class="ajouter-projet">+</div>
-
                     <div class="projet" id="projet1">Projet 1</div>
                     <div class="projet">Projet 2</div>
                     <div class="projet">Projet 3</div>
@@ -395,21 +394,23 @@
 
         <!-- Box pour ajouter un projet -->
         <div id="box-ajouter-un-projet" class="box">
-            <h2>Add a Project</h2> <!-- Titre en anglais -->
-            <input type="text" id="project-name" placeholder="Project Name"> <!-- Nom du projet -->
-            <textarea id="project-description" placeholder="Description"></textarea> <!-- Description -->
+            <form id="project-form">
+                <h2>Add a Project</h2> <!-- Titre en anglais -->
+                <input type="text" id="project-name" placeholder="Project Name"> <!-- Nom du projet -->
+                <textarea id="project-description" placeholder="Description"></textarea> <!-- Description -->
             
-            <input type="email" id="emails" name="emails[]" placeholder="Add members (emails)" multiple required> <!-- Ajouter des membres -->
+                <input type="text" id="emails" name="emails" placeholder="Add members (emails, separes par des virgules)"  required> <!-- Ajouter des membres -->
             
-            <label for="datedebut">Start Date:</label> <!-- Date de début -->
-            <input type="date" id="datedebut" placeholder="Start Date">
+                <label for="datedebut">Start Date:</label> <!-- Date de début -->
+                <input type="date" id="datedebut" placeholder="Start Date">
             
-            <label for="datefin">End Date:</label> <!-- Date de fin -->
-            <input type="date" id="datefin" placeholder="End Date">
+                <label for="datefin">End Date:</label> <!-- Date de fin -->
+                <input type="date" id="datefin" placeholder="End Date">
             
-            <button id="save-project">Save</button> <!-- Sauvegarder -->
-            <button id="close-add-box">Close</button> <!-- Fermer -->
-        </div>
+                <button id="save-project">Save</button> <!-- Sauvegarder -->
+                <button id="close-add-box">Close</button> <!-- Fermer -->
+            </form>        
+            </div>
 
 
 

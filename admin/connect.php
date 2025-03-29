@@ -1,6 +1,6 @@
 <?php
 // Informations de connexion à la base de données
-$dsn = 'mysql:host=localhost;dbname=mongo';  // Correction : $dsn au lieu de $dns
+$dsn = 'mysql:host=localhost;dbname=mongo'; 
 $user = 'root';
 $pass = '';
 $option = array(

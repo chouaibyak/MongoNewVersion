@@ -1,4 +1,104 @@
+
+
+async function loadProjectTasks(projectId) {
+  try {
+    const response = await fetch(`get_tasks.php?project_id=${projectId}`);
+    const tasks = await response.json();
+
+    const taskContainer = document.querySelector('.apparaition-tache');
+    const todoColumn = document.querySelector('.status-column:nth-child(1)');
+    const doingColumn = document.querySelector('.status-column:nth-child(2)');
+    const doneColumn = document.querySelector('.status-column:nth-child(3)');
+
+    // Clear existing tasks
+    taskContainer.innerHTML = '';
+    todoColumn.querySelectorAll('.task').forEach(t => t.remove());
+    doingColumn.querySelectorAll('.task').forEach(t => t.remove());
+    doneColumn.querySelectorAll('.task').forEach(t => t.remove());
+
+    if (tasks && tasks.length > 0) {
+      tasks.forEach(task => {
+        // Create task element
+        const taskElement = document.createElement('div');
+        taskElement.className = 'task_et_etat';
+        taskElement.dataset.taskId = task.id;
+        taskElement.innerHTML = `
+          <p class="task">${task.nom}</p>
+          <button class="status">${task.status || 'TO DO'}</button>
+          <button class="delete-task">X</button>
+        `;
+
+        // Add to task container
+        taskContainer.appendChild(taskElement);
+
+        // Add to appropriate status column
+        const statusElement = document.createElement('div');
+        statusElement.className = 'task';
+        statusElement.textContent = task.nom;
+        statusElement.dataset.taskId = task.id;
+
+        switch (task.status) {
+          case 'DOING':
+            doingColumn.appendChild(statusElement);
+            break;
+          case 'DONE':
+            doneColumn.appendChild(statusElement);
+            break;
+          default:
+            todoColumn.appendChild(statusElement);
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Error loading tasks:", error);
+  }
+}
+
+
+
+
+
+
+window.loadProjects = async function loadProjects() {
+  try {
+    const response = await fetch("get_projects.php?");
+    const projects = await response.json();
+
+    const projectContainer = document.querySelector('.board-project');
+
+    // Sauvegarder le bouton d'ajout avant de vider le conteneur
+    const addButton = projectContainer.querySelector('.ajouter-projet');
+    projectContainer.innerHTML = ''; // Vider le conteneur
+
+    // Réinsérer le bouton d'ajout
+    if (addButton) {
+      projectContainer.appendChild(addButton);
+    } else {
+      // Créer le bouton s'il n'existe pas
+      const newAddButton = document.createElement('div');
+      newAddButton.className = 'ajouter-projet';
+      newAddButton.textContent = '+';
+      newAddButton.addEventListener('click', function () {
+        document.getElementById('box-ajouter-un-projet').style.display = 'block';
+      });
+      projectContainer.appendChild(newAddButton);
+    }
+
+    if (projects && projects.length > 0) {
+      projects.forEach(project => {
+        addProjectToUI(project);
+      });
+    }
+  } catch (error) {
+    console.error("Error loading projects:", error);
+  }
+}
+
+
 document.addEventListener("DOMContentLoaded", function () {
+
+  window.loadProjects();
+
   const projet1 = document.getElementById("projet1");
   const board = document.querySelector(".board");
   const taskBoard = document.getElementById("task-board");
@@ -16,10 +116,14 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Revenir à la section "My Projects"
-  backButton.addEventListener("click", function () {
-    taskBoard.style.display = "none"; // Cache le tableau des tâches
-    board.style.display = "block"; // Affiche la section "My Projects"
-    myProjectTitle.style.display = "block"; // Affiche le titre "My Projects"
+  document.getElementById("back").addEventListener("click", function () {
+    document.getElementById("task-board").style.display = "none";
+    document.querySelector(".board").style.display = "block";
+  });
+
+  // Gestionnaire pour le bouton d'ajout
+  document.querySelector('.ajouter-projet').addEventListener('click', function () {
+    document.getElementById('box-ajouter-un-projet').style.display = 'block';
   });
 });
 
@@ -352,6 +456,118 @@ function showPage(pageId) {
   document.getElementById(pageId).style.display = "block";
 }
 
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+  // Éléments du DOM
+  const addUserButton = document.getElementById('addUserButton');
+  const addUserForm = document.getElementById('addUserForm');
+  const closeAddUserBox = document.getElementById('close-add-user-box');
+  const saveUserButton = document.getElementById('save-user');
+  const teamList = document.querySelector('.team-list');
+  const searchInput = document.getElementById('searchTeamInput');
+
+  // Afficher le formulaire d'ajout
+  addUserButton.addEventListener('click', function () {
+    addUserForm.style.display = 'block';
+  });
+
+  // Masquer le formulaire
+  closeAddUserBox.addEventListener('click', function () {
+    addUserForm.style.display = 'none';
+    // Réinitialiser le formulaire
+    document.getElementById('user-name').value = '';
+    document.getElementById('user-email').value = '';
+  });
+
+  // Sauvegarder un nouvel utilisateur
+  saveUserButton.addEventListener('click', function () {
+    const name = document.getElementById('user-name').value.trim();
+    const email = document.getElementById('user-email').value.trim();
+
+    if (name && email) {
+      addTeamMember(name, email, 'Pending');
+      // Masquer et réinitialiser le formulaire
+      closeAddUserBox.click();
+    } else {
+      alert('Please fill all fields');
+    }
+  });
+
+  // Fonction pour ajouter un membre à l'équipe
+  function addTeamMember(name, email, status = 'Offline') {
+    // Créer les initiales pour l'avatar
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'team-member';
+    memberDiv.innerHTML = `
+          <div class="avatar">${initials}</div>
+          <div class="member-info">
+              <h3>${name}</h3>
+              <p>${email}</p>
+              <span class="status">${status}</span>
+          </div>
+      `;
+
+    teamList.appendChild(memberDiv);
+    saveToLocalStorage();
+  }
+
+  // Fonction de recherche
+  searchInput.addEventListener('input', function () {
+    const searchTerm = this.value.toLowerCase();
+    const members = document.querySelectorAll('.team-member');
+
+    members.forEach(member => {
+      const name = member.querySelector('h3').textContent.toLowerCase();
+      const email = member.querySelector('p').textContent.toLowerCase();
+
+      if (name.includes(searchTerm) || email.includes(searchTerm)) {
+        member.style.display = 'flex';
+      } else {
+        member.style.display = 'none';
+      }
+    });
+  });
+
+  // Sauvegarder dans localStorage
+  function saveToLocalStorage() {
+    const members = [];
+    document.querySelectorAll('.team-member').forEach(member => {
+      members.push({
+        name: member.querySelector('h3').textContent,
+        email: member.querySelector('p').textContent,
+        status: member.querySelector('.status').textContent
+      });
+    });
+    localStorage.setItem('teamMembers', JSON.stringify(members));
+  }
+
+  // Uncomment and implement the function
+  function loadFromLocalStorage() {
+    const savedMembers = JSON.parse(localStorage.getItem('teamMembers'));
+    if (savedMembers && savedMembers.length > 0) {
+      savedMembers.forEach(member => {
+        addTeamMember(member.name, member.email, member.status);
+      });
+    } else {
+      // Optional: Add default members if none are saved
+      addTeamMember('Basma El kasimi', 'Lorem ipsum dolor sit amet consectetur adipisicing.', 'Online');
+      addTeamMember('Someone Name', 'Lorem ipsum dolor sit amet.', 'Offline');
+    }
+  }
+
+  // Charger les membres au démarrage
+  loadFromLocalStorage();
+});
+
+
+
+
+
+
 // Ajouter des écouteurs d'événements pour les boutons
 document.getElementById("myProjectBtn").addEventListener("click", function () {
   showPage("myProjectsPage"); // Afficher la page "My Projects"
@@ -557,81 +773,149 @@ document.querySelector('.ajouter-projet').addEventListener('click', function () 
 //=================================================================================================
 
 
-document.getElementById("save-project").addEventListener("click", function (e) {
+
+
+
+
+
+
+
+document.getElementById("save-project").addEventListener("click", async function (e) {
   e.preventDefault();
 
   let name = document.getElementById("project-name").value;
   let description = document.getElementById("project-description").value;
-  let emails = document.getElementById("emails").value.split(",");
+  let emailInput = document.getElementById("emails").value;
   let start_date = document.getElementById("datedebut").value;
   let end_date = document.getElementById("datefin").value;
 
-  // Validation simple
+  // Validation
   if (!name) {
-    alert("Le nom du projet est requis");
+    alert("Project name is required");
     return;
   }
+
+  // Traitement des emails
+  let emails = emailInput.split(',')
+    .map(email => email.trim())
+    .filter(email => email !== "");
 
   // Création de l'objet de données
   let projectData = {
     name: name,
     description: description,
-    emails: emails.map(email => email.trim()).filter(email => email !== ""),
+    emails: emails,
     start_date: start_date,
     end_date: end_date
   };
 
-  fetch("add_project.php", {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify(projectData)
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Erreur réseau');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.success) {
-        alert("Projet ajouté avec succès !");
-        // Ajouter le projet à l'interface
-        addProjectToUI({
-          ProjeID: data.project_id,
-          nom: name,
-          description: description,
-          dateCreation: new Date().toISOString(),
-          status: "En cours"
-        });
-        // Fermer et réinitialiser le formulaire
-        document.getElementById("box-ajouter-un-projet").style.display = "none";
-        document.getElementById("project-form").reset();
-      } else {
-        throw new Error(data.error || 'Erreur inconnue');
-      }
-    })
-    .catch(error => {
-      console.error("Erreur:", error);
-      alert("Erreur lors de l'ajout du projet: " + error.message);
+  try {
+    const response = await fetch("add_project.php", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(projectData)
     });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de l\'ajout');
+
+    if (data.success) {
+      // Recharger tous les projets après ajout
+      await loadProjects();
+
+      document.getElementById("box-ajouter-un-projet").style.display = "none";
+      document.getElementById("project-form").reset();
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Error: " + error.message);
+  }
 });
 
 
-// Fonction pour ajouter un projet à l'interface
+
+async function deleteProject(projectId, element) {
+  if (!confirm('Voulez-vous vraiment supprimer ce projet ?')) return;
+
+  try {
+    const response = await fetch(`delete_project.php?id=${projectId}`, {
+      method: 'DELETE'
+    });
+
+    // Debug: Afficher la réponse brute
+    const responseText = await response.text();
+    console.log("Raw response:", responseText);
+
+    if (response.status === 204) {
+      // 204 No Content n'a pas de body
+      element.remove();
+      showSuccessNotification('Projet supprimé avec succès');
+      loadProjects(); // Rafraîchir la liste
+    } else {
+      // Essayer de parser le JSON seulement si la réponse en contient
+      const errorData = responseText ? JSON.parse(responseText) : null;
+      throw new Error(errorData?.error || `Erreur serveur (status ${response.status})`);
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    showErrorNotification(error.message || 'Échec de la suppression');
+  }
+}
+
+// Fonctions d'affichage des notifications (à ajouter)
+function showSuccessNotification(message) {
+  const notif = document.createElement('div');
+  notif.className = 'notification success';
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 3000);
+}
+
+function showErrorNotification(message) {
+  const notif = document.createElement('div');
+  notif.className = 'notification error';
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 5000);
+}
+
+
 function addProjectToUI(project) {
+  // Vérifier si le projet existe déjà pour éviter les doublons
+  if (document.querySelector(`.projet[data-id="${project.ProjeID}"]`)) {
+    return;
+  }
+
   const projectContainer = document.querySelector('.board-project');
   const projectElement = document.createElement('div');
   projectElement.className = 'projet';
-  projectElement.textContent = project.nom;
-  projectElement.dataset.id = project.ProjeID;
+  projectElement.textContent = project.nom || project.name; // Utilisez le nom selon votre structure de données
+  projectElement.dataset.id = project.ProjeID || project.id;
 
-  // Info-bulle
-  projectElement.title = `Description: ${project.description}\n` +
-    `Date: ${new Date(project.dateCreation).toLocaleDateString()}\n` +
-    `Statut: ${project.status}`;
+
+  // Rendre le projet cliquable
+  projectElement.addEventListener('click', function () {
+    // Masquer la liste des projets
+    document.querySelector('.board').style.display = 'none';
+
+    // Afficher le tableau de tâches (déjà présent dans votre code)
+    document.getElementById('task-board').style.display = 'block';
+
+    // Mettre à jour le nom du projet dans l'en-tête (comme dans votre code)
+    document.querySelector('.nomProjet h1').textContent = this.textContent;
+
+    // Charger les tâches spécifiques à ce projet (nouveau)
+    loadProjectTasks(project.ProjeID || project.id);
+  });
+
+
+  // Ajouter les données supplémentaires comme attributs
+  projectElement.dataset.description = project.description;
+  projectElement.dataset.start_date = project.dateDebut || project.start_date;
+  projectElement.dataset.end_date = project.dateFin || project.end_date;
 
   // Bouton de suppression
   const deleteButton = document.createElement('button');
@@ -639,34 +923,22 @@ function addProjectToUI(project) {
   deleteButton.className = 'delete-button';
   deleteButton.addEventListener('click', function (e) {
     e.stopPropagation();
-    deleteProject(project.ProjeID, projectElement);
+    deleteProject(project.ProjeID || project.id, projectElement);
   });
 
   projectElement.appendChild(deleteButton);
   projectContainer.appendChild(projectElement);
+
+
 }
 
-// Fonction pour supprimer un projet
-function deleteProject(projectId, element) {
-  if (confirm('Voulez-vous vraiment supprimer ce projet ?')) {
-    fetch(`delete_project.php?id=${projectId}`, {
-      method: 'DELETE'
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          element.remove();
-          alert('Projet supprimé avec succès');
-        } else {
-          throw new Error(data.error || 'Erreur lors de la suppression');
-        }
-      })
-      .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de la suppression: ' + error.message);
-      });
-  }
-}
+
+
+
+
+
+
+
 
 
 
@@ -687,7 +959,8 @@ document.querySelector('.board-project').addEventListener('click', function (e) 
   if (e.target.classList.contains('projet')) {
     const project = e.target;
 
-    document.getElementById('project-details-name').textContent = project.textContent;
+    document.getElementById('project-details-name').textContent = project.firstChild.nodeValue.trim();
+    ;
     document.getElementById('project-details-description').textContent = project.dataset.description;
     document.getElementById('project-details-members').textContent = project.dataset.members;
     document.getElementById('project-details-deadline').textContent = project.dataset.deadline;
@@ -714,3 +987,37 @@ window.onclick = function (event) {
 
   );
 }
+
+
+// Ajoutez ces écouteurs d'événements
+document.querySelectorAll('.task').forEach(task => {
+  task.draggable = true;
+  task.addEventListener('dragstart', handleDragStart);
+});
+
+document.querySelectorAll('.status-column').forEach(column => {
+  column.addEventListener('dragover', handleDragOver);
+  column.addEventListener('drop', handleDrop);
+});
+
+function handleDragStart(e) {
+  e.dataTransfer.setData('text/plain', e.target.id);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const taskId = e.dataTransfer.getData('text/plain');
+  const task = document.getElementById(taskId);
+  e.currentTarget.appendChild(task);
+
+  // Mettre à jour le statut dans la base de données
+  updateTaskStatus(taskId, e.currentTarget.querySelector('em').textContent);
+}
+
+
+
+
